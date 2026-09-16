@@ -2,6 +2,21 @@
 
 A clean, large-faced clock and date application crafted for desk, wall, and nightstand glanceability.
 
+## Live Deployment (GitHub Pages)
+
+This repository includes a pre-configured automated GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds and publishes the app to GitHub Pages on every push to `main`.
+
+### To activate your live link on GitHub:
+
+1. Push or export this repository to GitHub.
+2. In your GitHub repository, go to **Settings** > **Pages** (in the left sidebar).
+3. Under **Build and deployment** > **Source**, select **GitHub Actions**.
+4. Push a commit or go to the **Actions** tab and trigger the **Deploy to GitHub Pages** workflow.
+5. Your live app will be published at:
+   ```
+   https://<your-github-username>.github.io/<repository-name>/
+   ```
+
 ## Features
 
 - **Multiple Clock Faces**:
