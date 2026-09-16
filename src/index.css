@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+@keyframes ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.ticker-track-normal {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: ticker-marquee 60s linear infinite;
+}
+
+.ticker-track-slow {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: ticker-marquee 90s linear infinite;
+}
+
+.ticker-track-fast {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: ticker-marquee 38s linear infinite;
+}
+
+.ticker-container:hover .ticker-track-normal,
+.ticker-container:hover .ticker-track-slow,
+.ticker-container:hover .ticker-track-fast {
+  animation-play-state: paused;
+}

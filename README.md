@@ -33,6 +33,11 @@ This repository includes a pre-configured automated GitHub Actions workflow (`.g
   - Quick toggle between Fahrenheit (°F) and Celsius (°C).
   - Search any city worldwide with reverse geocoding.
   - Graceful fallback using local timezone if GPS is denied.
+- **Scrolling Financial News & Market Ticker**:
+  - Live financial news headlines from leading publications (CNBC, Bloomberg, Wall Street Journal, Reuters, Financial Times).
+  - Real-time market index quotes (S&P 500, NASDAQ, Dow Jones, 10-Yr Treasury, Crude Oil, Gold, Bitcoin) with visual gain/loss indicators.
+  - Infinite smooth scrolling with hover-to-pause and clickable article links.
+  - Custom scroll speed controls (Slow, Normal, Fast) and quick toggle (`N` key or toolbar).
 - **Color Themes**:
   - **Studio Dark**: Modern charcoal slate.
   - **OLED Black**: Pure #000000 background for bedside nightstands and battery efficiency.

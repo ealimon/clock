@@ -1,6 +1,6 @@
 {
   "name": "Large Clock",
-  "description": "A large-faced clock application with bold digital and analog displays, comprehensive date visibility, and live local weather.",
+  "description": "A large-faced clock application with bold digital and analog displays, comprehensive date visibility, live local weather, and a scrolling financial news and market ticker.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

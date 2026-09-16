@@ -26,6 +26,23 @@ export interface WeatherData {
   lastUpdated: number;
 }
 
+export interface FinancialNewsItem {
+  id: string;
+  title: string;
+  source: string;
+  url?: string;
+  time?: string;
+  category?: 'markets' | 'economy' | 'companies' | 'crypto' | 'commodities';
+}
+
+export interface MarketIndexItem {
+  symbol: string;
+  name: string;
+  price: string;
+  change: string;
+  isPositive: boolean;
+}
+
 export interface ClockSettings {
   mode: ClockMode;
   theme: ClockTheme;
@@ -41,4 +58,6 @@ export interface ClockSettings {
   showWeather: boolean;
   tempUnit: TemperatureUnit;
   customLocation?: WeatherLocation;
+  showNewsTicker: boolean;
+  newsSpeed: 'slow' | 'normal' | 'fast';
 }

@@ -4,15 +4,17 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ClockSettings, WeatherData, WeatherLocation } from './types';
+import { ClockSettings, WeatherData, WeatherLocation, FinancialNewsItem, MarketIndexItem } from './types';
 import { DigitalFace } from './components/DigitalFace';
 import { AnalogFace } from './components/AnalogFace';
 import { FlipFace } from './components/FlipFace';
 import { DualFace } from './components/DualFace';
 import { ClockToolbar } from './components/ClockToolbar';
 import { WeatherWidget } from './components/WeatherWidget';
+import { FinancialTicker } from './components/FinancialTicker';
 import { playTick, playChime } from './utils/audio';
 import { fetchWeather, getDefaultCoordinatesForTimezone } from './utils/weather';
+import { DEFAULT_MARKET_INDICES, INITIAL_FINANCIAL_HEADLINES, fetchLiveFinancialNews } from './utils/finance';
 
 const STORAGE_KEY = 'large_clock_preferences_v1';
 const WEATHER_CACHE_KEY = 'large_clock_weather_cache_v1';
@@ -31,6 +33,8 @@ const DEFAULT_SETTINGS: ClockSettings = {
   fontSizeScale: 1.0,
   showWeather: true,
   tempUnit: 'fahrenheit',
+  showNewsTicker: true,
+  newsSpeed: 'normal',
 };
 
 export default function App() {
@@ -69,6 +73,11 @@ export default function App() {
   });
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+
+  // Financial News State
+  const [newsItems, setNewsItems] = useState<FinancialNewsItem[]>(INITIAL_FINANCIAL_HEADLINES);
+  const [marketIndices, setMarketIndices] = useState<MarketIndexItem[]>(DEFAULT_MARKET_INDICES);
+  const [newsLoading, setNewsLoading] = useState<boolean>(false);
 
   const prevSecondRef = useRef<number>(now.getSeconds());
   const prevHourRef = useRef<number>(now.getHours());
@@ -176,6 +185,33 @@ export default function App() {
       return () => clearInterval(interval);
     }
   }, [settings.showWeather, settings.tempUnit, settings.customLocation, loadWeather]);
+
+  // Live financial news fetcher
+  const refreshNews = useCallback(async () => {
+    if (!settings.showNewsTicker) return;
+    setNewsLoading(true);
+    try {
+      const liveNews = await fetchLiveFinancialNews();
+      if (liveNews && liveNews.length > 0) {
+        setNewsItems(liveNews);
+      }
+    } catch (err) {
+      console.warn('Financial news refresh error:', err);
+    } finally {
+      setNewsLoading(false);
+    }
+  }, [settings.showNewsTicker]);
+
+  // Financial news load and background refresh (every 10 minutes)
+  useEffect(() => {
+    if (settings.showNewsTicker) {
+      refreshNews();
+      const interval = setInterval(() => {
+        refreshNews();
+      }, 10 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [settings.showNewsTicker, refreshNews]);
 
   // Handle location selection
   const handleSelectLocation = useCallback((loc: WeatherLocation | null) => {
@@ -320,12 +356,14 @@ export default function App() {
         updateSettings({ showDate: !settings.showDate });
       } else if (key === 'w') {
         updateSettings({ showWeather: !settings.showWeather });
+      } else if (key === 'n') {
+        updateSettings({ showNewsTicker: !settings.showNewsTicker });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [settings.mode, settings.theme, settings.showSeconds, settings.is24Hour, settings.showDate, settings.showWeather, toggleFullscreen, updateSettings]);
+  }, [settings.mode, settings.theme, settings.showSeconds, settings.is24Hour, settings.showDate, settings.showWeather, settings.showNewsTicker, toggleFullscreen, updateSettings]);
 
   // Background style based on theme
   const getThemeBackgroundClass = () => {
@@ -387,7 +425,9 @@ export default function App() {
       {/* Main Clock Face Display Zone */}
       <section 
         id="clock-face-viewport"
-        className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8 w-full"
+        className={`relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8 w-full transition-all ${
+          settings.showNewsTicker ? 'pb-12 sm:pb-14' : ''
+        }`}
       >
         {settings.mode === 'digital' && (
           <DigitalFace now={now} settings={settings} weatherSlot={weatherElement} />
@@ -411,6 +451,20 @@ export default function App() {
         isFullscreen={isFullscreen}
         toggleFullscreen={toggleFullscreen}
       />
+
+      {/* Scrolling Financial News Ticker */}
+      {settings.showNewsTicker && (
+        <FinancialTicker
+          indices={marketIndices}
+          news={newsItems}
+          theme={settings.theme}
+          speed={settings.newsSpeed}
+          onSpeedChange={(speed) => updateSettings({ newsSpeed: speed })}
+          onClose={() => updateSettings({ showNewsTicker: false })}
+          onRefresh={refreshNews}
+          loading={newsLoading}
+        />
+      )}
     </main>
   );
 }

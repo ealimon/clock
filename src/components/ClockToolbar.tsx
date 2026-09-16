@@ -19,7 +19,8 @@ import {
   SlidersHorizontal,
   Flame,
   LayoutGrid,
-  CloudSun
+  CloudSun,
+  Newspaper
 } from 'lucide-react';
 
 interface ClockToolbarProps {
@@ -88,7 +89,9 @@ export const ClockToolbar: React.FC<ClockToolbarProps> = ({
       <nav
         id="clock-main-toolbar"
         aria-label="Clock Controls"
-        className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-out ${
+        className={`fixed ${
+          settings.showNewsTicker ? 'bottom-11 sm:bottom-12' : 'bottom-5'
+        } left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-out ${
           isVisible ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
@@ -147,6 +150,19 @@ export const ClockToolbar: React.FC<ClockToolbarProps> = ({
             aria-label={settings.showWeather ? 'Hide weather' : 'Show weather'}
           >
             <CloudSun className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Financial News Ticker Toggle */}
+          <button
+            id="btn-toggle-news"
+            onClick={() => updateSettings({ showNewsTicker: !settings.showNewsTicker })}
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+              settings.showNewsTicker ? buttonActiveBg : buttonInactiveBg
+            }`}
+            title={settings.showNewsTicker ? 'Hide financial news ticker (N)' : 'Show financial news ticker (N)'}
+            aria-label={settings.showNewsTicker ? 'Hide financial news ticker' : 'Show financial news ticker'}
+          >
+            <Newspaper className="w-3.5 h-3.5" />
           </button>
 
           {/* Sound Toggle */}
@@ -327,6 +343,45 @@ export const ClockToolbar: React.FC<ClockToolbarProps> = ({
                       >
                         °C
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Financial News Ticker */}
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <div className="font-medium text-sm">Financial News Ticker</div>
+                    <div className="text-xs opacity-60">Live scrolling financial headlines & market indices (N)</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="checkbox-show-news"
+                    checked={settings.showNewsTicker}
+                    onChange={(e) => updateSettings({ showNewsTicker: e.target.checked })}
+                    className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Ticker Speed */}
+                {settings.showNewsTicker && (
+                  <div className="flex items-center justify-between pl-3 border-l-2 border-blue-500/40">
+                    <div>
+                      <div className="font-medium text-xs">Ticker Scroll Speed</div>
+                      <div className="text-[11px] opacity-60">Slow, Normal, or Fast</div>
+                    </div>
+                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/10 dark:bg-white/10">
+                      {(['slow', 'normal', 'fast'] as const).map((spd) => (
+                        <button
+                          key={spd}
+                          type="button"
+                          onClick={() => updateSettings({ newsSpeed: spd })}
+                          className={`px-2 py-1 rounded text-xs font-mono capitalize cursor-pointer ${
+                            settings.newsSpeed === spd ? buttonActiveBg : buttonInactiveBg
+                          }`}
+                        >
+                          {spd}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
