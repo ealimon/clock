@@ -18,7 +18,8 @@ import {
   Check, 
   SlidersHorizontal,
   Flame,
-  LayoutGrid
+  LayoutGrid,
+  CloudSun
 } from 'lucide-react';
 
 interface ClockToolbarProps {
@@ -133,6 +134,19 @@ export const ClockToolbar: React.FC<ClockToolbarProps> = ({
             title="Toggle Seconds display"
           >
             :SS
+          </button>
+
+          {/* Weather Toggle */}
+          <button
+            id="btn-toggle-weather"
+            onClick={() => updateSettings({ showWeather: !settings.showWeather })}
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+              settings.showWeather ? buttonActiveBg : buttonInactiveBg
+            }`}
+            title={settings.showWeather ? 'Hide weather' : 'Show weather'}
+            aria-label={settings.showWeather ? 'Hide weather' : 'Show weather'}
+          >
+            <CloudSun className="w-3.5 h-3.5" />
           </button>
 
           {/* Sound Toggle */}
@@ -272,6 +286,50 @@ export const ClockToolbar: React.FC<ClockToolbarProps> = ({
                     className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
                   />
                 </label>
+
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <div className="font-medium text-sm">Display Weather</div>
+                    <div className="text-xs opacity-60">Show temperature and conditions in your area</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="checkbox-show-weather"
+                    checked={settings.showWeather}
+                    onChange={(e) => updateSettings({ showWeather: e.target.checked })}
+                    className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Temperature Unit */}
+                {settings.showWeather && (
+                  <div className="flex items-center justify-between pl-3 border-l-2 border-blue-500/40">
+                    <div>
+                      <div className="font-medium text-xs">Temperature Unit</div>
+                      <div className="text-[11px] opacity-60">Fahrenheit (°F) or Celsius (°C)</div>
+                    </div>
+                    <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/10 dark:bg-white/10">
+                      <button
+                        type="button"
+                        onClick={() => updateSettings({ tempUnit: 'fahrenheit' })}
+                        className={`px-2 py-1 rounded text-xs font-mono font-medium cursor-pointer ${
+                          settings.tempUnit === 'fahrenheit' ? buttonActiveBg : buttonInactiveBg
+                        }`}
+                      >
+                        °F
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateSettings({ tempUnit: 'celsius' })}
+                        className={`px-2 py-1 rounded text-xs font-mono font-medium cursor-pointer ${
+                          settings.tempUnit === 'celsius' ? buttonActiveBg : buttonInactiveBg
+                        }`}
+                      >
+                        °C
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>

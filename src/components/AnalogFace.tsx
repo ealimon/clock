@@ -5,9 +5,10 @@ import { formatDateString } from '../utils/timeFormat';
 interface AnalogFaceProps {
   now: Date;
   settings: ClockSettings;
+  weatherSlot?: React.ReactNode;
 }
 
-export const AnalogFace: React.FC<AnalogFaceProps> = ({ now, settings }) => {
+export const AnalogFace: React.FC<AnalogFaceProps> = ({ now, settings, weatherSlot }) => {
   const dateInfo = formatDateString(now, settings.dateFormat);
   
   const hours = now.getHours() % 12;
@@ -341,6 +342,12 @@ export const AnalogFace: React.FC<AnalogFaceProps> = ({ now, settings }) => {
           >
             {dateInfo.formattedDate}
           </div>
+
+          {weatherSlot && (
+            <div className="mt-4 flex justify-center">
+              {weatherSlot}
+            </div>
+          )}
         </div>
       )}
     </div>

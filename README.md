@@ -28,6 +28,11 @@ This repository includes a pre-configured automated GitHub Actions workflow (`.g
   - Day of the week in bold display type.
   - Full calendar date (customizable to Full, Standard, Compact, or ISO formats).
   - Day-of-year, week-of-year, and local timezone details.
+- **Live Local Weather**:
+  - Automatic geolocation detection for current temperature, daily high/low, and conditions.
+  - Quick toggle between Fahrenheit (°F) and Celsius (°C).
+  - Search any city worldwide with reverse geocoding.
+  - Graceful fallback using local timezone if GPS is denied.
 - **Color Themes**:
   - **Studio Dark**: Modern charcoal slate.
   - **OLED Black**: Pure #000000 background for bedside nightstands and battery efficiency.

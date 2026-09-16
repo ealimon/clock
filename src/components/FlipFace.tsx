@@ -5,6 +5,7 @@ import { formatTimeParts, formatDateString } from '../utils/timeFormat';
 interface FlipFaceProps {
   now: Date;
   settings: ClockSettings;
+  weatherSlot?: React.ReactNode;
 }
 
 interface FlipCardProps {
@@ -69,7 +70,7 @@ const FlipCard: React.FC<FlipCardProps> = ({ value, label, theme }) => {
   );
 };
 
-export const FlipFace: React.FC<FlipFaceProps> = ({ now, settings }) => {
+export const FlipFace: React.FC<FlipFaceProps> = ({ now, settings, weatherSlot }) => {
   const time = formatTimeParts(now, settings.is24Hour);
   const dateInfo = formatDateString(now, settings.dateFormat);
 
@@ -130,6 +131,12 @@ export const FlipFace: React.FC<FlipFaceProps> = ({ now, settings }) => {
           >
             {dateInfo.formattedDate}
           </div>
+
+          {weatherSlot && (
+            <div className="mt-4 sm:mt-5 flex justify-center">
+              {weatherSlot}
+            </div>
+          )}
         </div>
       )}
     </div>

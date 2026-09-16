@@ -5,9 +5,10 @@ import { formatTimeParts, formatDateString, getTimezoneDetails } from '../utils/
 interface DigitalFaceProps {
   now: Date;
   settings: ClockSettings;
+  weatherSlot?: React.ReactNode;
 }
 
-export const DigitalFace: React.FC<DigitalFaceProps> = ({ now, settings }) => {
+export const DigitalFace: React.FC<DigitalFaceProps> = ({ now, settings, weatherSlot }) => {
   const time = formatTimeParts(now, settings.is24Hour);
   const dateInfo = formatDateString(now, settings.dateFormat);
   const tz = getTimezoneDetails();
@@ -145,6 +146,13 @@ export const DigitalFace: React.FC<DigitalFaceProps> = ({ now, settings }) => {
           >
             {dateInfo.formattedDate}
           </div>
+
+          {/* Weather Widget Integration */}
+          {weatherSlot && (
+            <div className="mt-4 sm:mt-5 flex justify-center">
+              {weatherSlot}
+            </div>
+          )}
 
           {/* Clean minimal hairline divider & day progress indicator */}
           <div className="mt-6 sm:mt-8 w-48 sm:w-64 h-1 mx-auto rounded-full overflow-hidden bg-gray-500/20">

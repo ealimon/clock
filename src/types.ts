@@ -4,6 +4,28 @@ export type ClockTheme = 'dark' | 'oled' | 'light' | 'amber' | 'sage';
 
 export type DateFormat = 'full' | 'standard' | 'compact' | 'iso';
 
+export type TemperatureUnit = 'fahrenheit' | 'celsius';
+
+export interface WeatherLocation {
+  latitude: number;
+  longitude: number;
+  name: string;
+  isAuto: boolean;
+}
+
+export interface WeatherData {
+  temperature: number;
+  tempMax: number;
+  tempMin: number;
+  weatherCode: number;
+  condition: string;
+  humidity: number;
+  windSpeed: number;
+  locationName: string;
+  unit: TemperatureUnit;
+  lastUpdated: number;
+}
+
 export interface ClockSettings {
   mode: ClockMode;
   theme: ClockTheme;
@@ -16,4 +38,7 @@ export interface ClockSettings {
   soundEnabled: boolean;
   chimeHourly: boolean;
   fontSizeScale: number; // 0.8 to 1.3
+  showWeather: boolean;
+  tempUnit: TemperatureUnit;
+  customLocation?: WeatherLocation;
 }

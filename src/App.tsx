@@ -4,15 +4,18 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ClockSettings } from './types';
+import { ClockSettings, WeatherData, WeatherLocation } from './types';
 import { DigitalFace } from './components/DigitalFace';
 import { AnalogFace } from './components/AnalogFace';
 import { FlipFace } from './components/FlipFace';
 import { DualFace } from './components/DualFace';
 import { ClockToolbar } from './components/ClockToolbar';
+import { WeatherWidget } from './components/WeatherWidget';
 import { playTick, playChime } from './utils/audio';
+import { fetchWeather, getDefaultCoordinatesForTimezone } from './utils/weather';
 
 const STORAGE_KEY = 'large_clock_preferences_v1';
+const WEATHER_CACHE_KEY = 'large_clock_weather_cache_v1';
 
 const DEFAULT_SETTINGS: ClockSettings = {
   mode: 'digital',
@@ -26,6 +29,8 @@ const DEFAULT_SETTINGS: ClockSettings = {
   soundEnabled: false,
   chimeHourly: false,
   fontSizeScale: 1.0,
+  showWeather: true,
+  tempUnit: 'fahrenheit',
 };
 
 export default function App() {
@@ -46,6 +51,25 @@ export default function App() {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Weather state
+  const [weather, setWeather] = useState<WeatherData | null>(() => {
+    try {
+      const cached = localStorage.getItem(WEATHER_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as WeatherData;
+        // Keep cache valid for 30 minutes
+        if (Date.now() - parsed.lastUpdated < 30 * 60 * 1000) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    return null;
+  });
+  const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+
   const prevSecondRef = useRef<number>(now.getSeconds());
   const prevHourRef = useRef<number>(now.getHours());
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,6 +86,114 @@ export default function App() {
       return next;
     });
   }, []);
+
+  // Weather fetcher function
+  const loadWeather = useCallback(async (forcedLocation?: WeatherLocation | null) => {
+    if (!settings.showWeather) return;
+
+    setWeatherLoading(true);
+    setWeatherError(null);
+
+    try {
+      const targetLocation = forcedLocation !== undefined ? forcedLocation : settings.customLocation;
+
+      if (targetLocation && !targetLocation.isAuto) {
+        // Use custom searched location
+        const data = await fetchWeather(
+          targetLocation.latitude,
+          targetLocation.longitude,
+          settings.tempUnit,
+          targetLocation.name
+        );
+        setWeather(data);
+        localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+      } else if (navigator.geolocation) {
+        // Use browser geolocation
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const data = await fetchWeather(
+                pos.coords.latitude,
+                pos.coords.longitude,
+                settings.tempUnit
+              );
+              setWeather(data);
+              localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+              setWeatherLoading(false);
+            } catch (err) {
+              setWeatherError((err as Error).message);
+              setWeatherLoading(false);
+            }
+          },
+          async (geoErr) => {
+            // Geolocation denied or timed out; fallback gracefully to timezone coords
+            console.warn('Geolocation unavailable or denied:', geoErr.message);
+            try {
+              const tzCoord = getDefaultCoordinatesForTimezone();
+              const data = await fetchWeather(
+                tzCoord.latitude,
+                tzCoord.longitude,
+                settings.tempUnit,
+                tzCoord.name
+              );
+              setWeather(data);
+              localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+            } catch (fallbackErr) {
+              setWeatherError((fallbackErr as Error).message);
+            } finally {
+              setWeatherLoading(false);
+            }
+          },
+          { timeout: 8000, maximumAge: 60000 }
+        );
+        return; // Asynchronous callback handles setWeatherLoading(false)
+      } else {
+        // No geolocation available at all
+        const tzCoord = getDefaultCoordinatesForTimezone();
+        const data = await fetchWeather(
+          tzCoord.latitude,
+          tzCoord.longitude,
+          settings.tempUnit,
+          tzCoord.name
+        );
+        setWeather(data);
+        localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+      }
+    } catch (err) {
+      setWeatherError((err as Error).message);
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [settings.showWeather, settings.tempUnit, settings.customLocation]);
+
+  // Initial and recurring weather load (every 20 minutes)
+  useEffect(() => {
+    if (settings.showWeather) {
+      loadWeather();
+      const interval = setInterval(() => {
+        loadWeather();
+      }, 20 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [settings.showWeather, settings.tempUnit, settings.customLocation, loadWeather]);
+
+  // Handle location selection
+  const handleSelectLocation = useCallback((loc: WeatherLocation | null) => {
+    if (loc === null) {
+      // Return to auto GPS
+      updateSettings({ customLocation: undefined });
+      loadWeather(null);
+    } else {
+      updateSettings({ customLocation: loc });
+      loadWeather(loc);
+    }
+  }, [updateSettings, loadWeather]);
+
+  // Handle temperature unit toggle
+  const handleToggleTempUnit = useCallback(() => {
+    const nextUnit = settings.tempUnit === 'fahrenheit' ? 'celsius' : 'fahrenheit';
+    updateSettings({ tempUnit: nextUnit });
+  }, [settings.tempUnit, updateSettings]);
 
   // Time loop with requestAnimationFrame for smooth sweeping second hand or exact interval
   useEffect(() => {
@@ -167,30 +299,33 @@ export default function App() {
         return;
       }
 
-      if (e.key.toLowerCase() === 'f') {
+      const key = e.key.toLowerCase();
+      if (key === 'f') {
         toggleFullscreen();
-      } else if (e.key.toLowerCase() === 'm') {
+      } else if (key === 'm') {
         // Cycle mode
         const order: ClockSettings['mode'][] = ['digital', 'analog', 'flip', 'dual'];
         const nextIdx = (order.indexOf(settings.mode) + 1) % order.length;
         updateSettings({ mode: order[nextIdx] });
-      } else if (e.key.toLowerCase() === 't') {
+      } else if (key === 't') {
         // Cycle theme
         const themes: ClockSettings['theme'][] = ['dark', 'oled', 'light', 'amber', 'sage'];
         const nextIdx = (themes.indexOf(settings.theme) + 1) % themes.length;
         updateSettings({ theme: themes[nextIdx] });
-      } else if (e.key.toLowerCase() === 's') {
+      } else if (key === 's') {
         updateSettings({ showSeconds: !settings.showSeconds });
       } else if (e.key === '2') {
         updateSettings({ is24Hour: !settings.is24Hour });
-      } else if (e.key.toLowerCase() === 'd') {
+      } else if (key === 'd') {
         updateSettings({ showDate: !settings.showDate });
+      } else if (key === 'w') {
+        updateSettings({ showWeather: !settings.showWeather });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [settings.mode, settings.theme, settings.showSeconds, settings.is24Hour, settings.showDate, toggleFullscreen, updateSettings]);
+  }, [settings.mode, settings.theme, settings.showSeconds, settings.is24Hour, settings.showDate, settings.showWeather, toggleFullscreen, updateSettings]);
 
   // Background style based on theme
   const getThemeBackgroundClass = () => {
@@ -208,6 +343,20 @@ export default function App() {
         return 'bg-[#0b0f17] text-white';
     }
   };
+
+  // Weather slot component to inject into face components
+  const weatherElement = settings.showWeather ? (
+    <WeatherWidget
+      weather={weather}
+      loading={weatherLoading}
+      error={weatherError}
+      theme={settings.theme}
+      tempUnit={settings.tempUnit}
+      onRefresh={() => loadWeather()}
+      onSelectLocation={handleSelectLocation}
+      onToggleUnit={handleToggleTempUnit}
+    />
+  ) : null;
 
   return (
     <main
@@ -241,16 +390,16 @@ export default function App() {
         className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8 w-full"
       >
         {settings.mode === 'digital' && (
-          <DigitalFace now={now} settings={settings} />
+          <DigitalFace now={now} settings={settings} weatherSlot={weatherElement} />
         )}
         {settings.mode === 'analog' && (
-          <AnalogFace now={now} settings={settings} />
+          <AnalogFace now={now} settings={settings} weatherSlot={weatherElement} />
         )}
         {settings.mode === 'flip' && (
-          <FlipFace now={now} settings={settings} />
+          <FlipFace now={now} settings={settings} weatherSlot={weatherElement} />
         )}
         {settings.mode === 'dual' && (
-          <DualFace now={now} settings={settings} />
+          <DualFace now={now} settings={settings} weatherSlot={weatherElement} />
         )}
       </section>
 
